@@ -1,57 +1,40 @@
+import os
 import random
 import requests
-from datetime import date, timedelta
 from PIL import Image
 from io import BytesIO
 
-GIBS_WMS_URL = "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi"
+MAPBOX_TOKEN = os.getenv("MAPBOX_TOKEN")
 
-DEFAULT_LAYER = "MODIS_Terra_CorrectedReflectance_TrueColor"
+MAPBOX_BASE_URL = "https://api.mapbox.com/styles/v1/mapbox"
+SATELLITE_STYLE = "satellite-v9"
+
 
 def generate_random_coordinate():
-    # we generate random latitude and longitude
-    # We won't do (-90,90) for latitude, because that's the coordinates of the poles
-    # and after +- 70 we get distortion of satelite imagery
+    # We generate random latitude and longitude.
+    # We avoid the polar regions because they are less useful for gameplay.
     latitude = random.uniform(-70, 70)
     longitude = random.uniform(-180, 180)
     return latitude, longitude
 
-def build_boundary(latitude, longitude):
-    # Build a square boundary around the center point
-    boundary_size = 1.0
 
-    min_lat = max(-90, latitude - boundary_size)
-    max_lat = min(90, latitude + boundary_size)
-    min_lon = max(-180, longitude - boundary_size)
-    max_lon = min(180, longitude + boundary_size)
+def build_mapbox_image_url(latitude, longitude):
+    # Mapbox Static Images API uses:
+    # /styles/v1/{username}/{style_id}/static/{lon},{lat},{zoom}/{width}x{height}
+    zoom = 10
+    width = 512
+    height = 512
 
-    return f"{min_lon},{min_lat},{max_lon},{max_lat}"
+    return (
+        f"{MAPBOX_BASE_URL}/{SATELLITE_STYLE}/static/"
+        f"{longitude},{latitude},{zoom}/{width}x{height}"
+        f"?access_token={MAPBOX_TOKEN}"
+    )
 
-def build_gibs_image_url(latitude, longitude):
-    boundary_box = build_boundary(latitude, longitude)
-    image_date = (date.today() - timedelta(days=7)).isoformat()
-
-    params = {
-        "SERVICE": "WMS",
-        "REQUEST": "GetMap",
-        "VERSION": "1.1.1",
-        "LAYERS": DEFAULT_LAYER,
-        "STYLES": "",
-        "FORMAT": "image/jpeg",
-        "TRANSPARENT": "FALSE",
-        "SRS": "EPSG:4326",
-        "WIDTH": 512,
-        "HEIGHT": 512,
-        "BBOX": boundary_box,
-        "TIME": image_date,
-    }
-
-    query_string = "&".join(f"{key}={value}" for key, value in params.items())
-    return f"{GIBS_WMS_URL}?{query_string}"
 
 def get_random_location():
     latitude, longitude = generate_random_coordinate()
-    image_url = build_gibs_image_url(latitude, longitude)
+    image_url = build_mapbox_image_url(latitude, longitude)
 
     return {
         "latitude": latitude,
@@ -59,8 +42,13 @@ def get_random_location():
         "image_url": image_url
     }
 
+
 def main():
     print("Generating random location...\n")
+
+    if not MAPBOX_TOKEN:
+        print("Error: MAPBOX_TOKEN is not set.")
+        return
 
     try:
         location = get_random_location()
@@ -73,19 +61,19 @@ def main():
 
         print("\nDownloading image...")
 
-        response = requests.get(image_url)
+        response = requests.get(image_url, timeout=20)
 
         if response.status_code == 200:
-            # Convert response bytes into an image
             image = Image.open(BytesIO(response.content))
 
-            file_path = "images/test_image.jpg"
+            file_path = "images/test_image.png"
             image.save(file_path)
 
             print(f"Image saved to {file_path}")
-
         else:
             print("Failed to download image.")
+            print(f"Status code: {response.status_code}")
+            print(response.text)
 
     except Exception as e:
         print("Error:", e)

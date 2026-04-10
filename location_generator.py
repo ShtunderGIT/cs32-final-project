@@ -1,54 +1,55 @@
-import os
 import random
 import requests
+import math
 from PIL import Image
 from io import BytesIO
 
-MAPBOX_TOKEN = os.getenv("MAPBOX_TOKEN")
-
-MAPBOX_BASE_URL = "https://api.mapbox.com/styles/v1/mapbox"
-SATELLITE_STYLE = "satellite-v9"
+# USGS Imagery tile server
+TILE_URL = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile"
 
 
 def generate_random_coordinate():
-    # We generate random latitude and longitude.
-    # We avoid the polar regions because they are less useful for gameplay.
-    latitude = random.uniform(-70, 70)
-    longitude = random.uniform(-180, 180)
+
+    #Generate random coordinates within the United States.
+
+    latitude = random.uniform(25, 49)      # US latitude range
+    longitude = random.uniform(-125, -66)  # US longitude range
     return latitude, longitude
 
 
-def build_mapbox_image_url(latitude, longitude):
-    # Mapbox Static Images API uses:
-    # /styles/v1/{username}/{style_id}/static/{lon},{lat},{zoom}/{width}x{height}
-    zoom = 10
-    width = 512
-    height = 512
+def latlon_to_tile(lat, lon, zoom):
 
-    return (
-        f"{MAPBOX_BASE_URL}/{SATELLITE_STYLE}/static/"
-        f"{longitude},{latitude},{zoom}/{width}x{height}"
-        f"?access_token={MAPBOX_TOKEN}"
-    )
+    #Convert latitude/longitude to tile x,y coordinates.
+
+    lat_rad = math.radians(lat)
+    n = 2 ** zoom
+
+    x = int((lon + 180.0) / 360.0 * n)
+    y = int((1.0 - math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi) / 2.0 * n)
+
+    return x, y
+
+
+def build_tile_url(lat, lon, zoom=12):
+    #Build a tile URL for USGS imagery.
+
+    x, y = latlon_to_tile(lat, lon, zoom)
+    return f"{TILE_URL}/{zoom}/{y}/{x}"
 
 
 def get_random_location():
-    latitude, longitude = generate_random_coordinate()
-    image_url = build_mapbox_image_url(latitude, longitude)
+    lat, lon = generate_random_coordinate()
+    image_url = build_tile_url(lat, lon)
 
     return {
-        "latitude": latitude,
-        "longitude": longitude,
+        "latitude": lat,
+        "longitude": lon,
         "image_url": image_url
     }
 
 
 def main():
-    print("Generating random location...\n")
-
-    if not MAPBOX_TOKEN:
-        print("Error: MAPBOX_TOKEN is not set.")
-        return
+    print("Generating random US location...\n")
 
     try:
         location = get_random_location()
@@ -57,23 +58,19 @@ def main():
         print(f"Latitude:  {location['latitude']}")
         print(f"Longitude: {location['longitude']}")
 
-        image_url = location["image_url"]
-
         print("\nDownloading image...")
 
-        response = requests.get(image_url, timeout=20)
+        response = requests.get(location["image_url"])
 
         if response.status_code == 200:
             image = Image.open(BytesIO(response.content))
 
-            file_path = "images/test_image.png"
+            file_path = "images/test_image.jpg"
             image.save(file_path)
 
             print(f"Image saved to {file_path}")
         else:
             print("Failed to download image.")
-            print(f"Status code: {response.status_code}")
-            print(response.text)
 
     except Exception as e:
         print("Error:", e)

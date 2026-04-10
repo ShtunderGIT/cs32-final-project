@@ -1,7 +1,8 @@
 import random
 import requests
-import webbrowser
 from datetime import date, timedelta
+from PIL import Image
+from io import BytesIO
 
 GIBS_WMS_URL = "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi"
 
@@ -16,11 +17,9 @@ def generate_random_coordinate():
     return latitude, longitude
 
 def build_boundary(latitude, longitude):
-    # We will build a square boundary around the center point
-    # This defines the area of Earth we request an image for.
-    # The size is fixed to keep the design simple for now.
+    # Build a square boundary around the center point
+    boundary_size = 1.0
 
-    boundary_size = 1.0  # degrees (controls zoom level)
     min_lat = max(-90, latitude - boundary_size)
     max_lat = min(90, latitude + boundary_size)
     min_lon = max(-180, longitude - boundary_size)
@@ -29,10 +28,7 @@ def build_boundary(latitude, longitude):
     return f"{min_lon},{min_lat},{max_lon},{max_lat}"
 
 def build_gibs_image_url(latitude, longitude):
-    #Build a NASA GIBS image URL for the given coordinates.
-
     boundary_box = build_boundary(latitude, longitude)
-
     image_date = (date.today() - timedelta(days=7)).isoformat()
 
     params = {
@@ -54,9 +50,6 @@ def build_gibs_image_url(latitude, longitude):
     return f"{GIBS_WMS_URL}?{query_string}"
 
 def get_random_location():
-
-    #Return a random location with matching coordinates and image URL.
-
     latitude, longitude = generate_random_coordinate()
     image_url = build_gibs_image_url(latitude, longitude)
 
@@ -83,15 +76,20 @@ def main():
         response = requests.get(image_url)
 
         if response.status_code == 200:
+            # Convert response bytes into an image
+            image = Image.open(BytesIO(response.content))
 
             file_path = "images/test_image.jpg"
-
-            with open(file_path, "wb") as f:
-                f.write(response.content)
+            image.save(file_path)
 
             print(f"Image saved to {file_path}")
+
         else:
             print("Failed to download image.")
 
     except Exception as e:
         print("Error:", e)
+
+
+if __name__ == "__main__":
+    main()

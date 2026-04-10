@@ -9,18 +9,14 @@ TILE_URL = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly
 
 
 def generate_random_coordinate():
-
-    #Generate random coordinates within the United States.
-
-    latitude = random.uniform(25, 49)      # US latitude range
-    longitude = random.uniform(-125, -66)  # US longitude range
+    # Generate random coordinates within the United States
+    latitude = random.uniform(25, 49)
+    longitude = random.uniform(-125, -66)
     return latitude, longitude
 
 
 def latlon_to_tile(lat, lon, zoom):
-
-    #Convert latitude/longitude to tile x,y coordinates.
-
+    # Convert latitude/longitude to tile x,y coordinates
     lat_rad = math.radians(lat)
     n = 2 ** zoom
 
@@ -30,11 +26,32 @@ def latlon_to_tile(lat, lon, zoom):
     return x, y
 
 
-def build_tile_url(lat, lon, zoom=12):
-    #Build a tile URL for USGS imagery.
-
+def build_tile_url(lat, lon, zoom=15):
+    # Build a tile URL for USGS imagery
     x, y = latlon_to_tile(lat, lon, zoom)
     return f"{TILE_URL}/{zoom}/{y}/{x}"
+
+
+def get_combined_image(lat, lon, zoom=15):
+    # Download a 3x3 group of tiles and stitch them into one image
+    x, y = latlon_to_tile(lat, lon, zoom)
+
+    tile_size = 256
+    combined = Image.new("RGB", (tile_size * 3, tile_size * 3))
+
+    for dx in [-1, 0, 1]:
+        for dy in [-1, 0, 1]:
+            tile_url = f"{TILE_URL}/{zoom}/{y + dy}/{x + dx}"
+
+            response = requests.get(tile_url)
+            image = Image.open(BytesIO(response.content))
+
+            paste_x = (dx + 1) * tile_size
+            paste_y = (dy + 1) * tile_size
+
+            combined.paste(image, (paste_x, paste_y))
+
+    return combined
 
 
 def get_random_location():
@@ -60,17 +77,12 @@ def main():
 
         print("\nDownloading image...")
 
-        response = requests.get(location["image_url"])
+        image = get_combined_image(location["latitude"], location["longitude"], zoom=15)
 
-        if response.status_code == 200:
-            image = Image.open(BytesIO(response.content))
+        file_path = "images/test_image.jpg"
+        image.save(file_path)
 
-            file_path = "images/test_image.jpg"
-            image.save(file_path)
-
-            print(f"Image saved to {file_path}")
-        else:
-            print("Failed to download image.")
+        print(f"Image saved to {file_path}")
 
     except Exception as e:
         print("Error:", e)

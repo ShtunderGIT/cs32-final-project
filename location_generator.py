@@ -66,26 +66,22 @@ def get_random_location():
 
 
 def main():
-    print("Generating random US location...\n")
 
-    try:
-        location = get_random_location()
 
-        print("Location:")
-        print(f"Latitude:  {location['latitude']}")
-        print(f"Longitude: {location['longitude']}")
+    location = get_random_location()
 
-        print("\nDownloading image...")
+    print("Location:")
+    print(f"Latitude:  {location['latitude']}")
+    print(f"Longitude: {location['longitude']}")
 
-        image = get_combined_image(location["latitude"], location["longitude"], zoom=15)
 
-        file_path = "images/test_image.jpg"
-        image.save(file_path)
+    image = get_combined_image(location["latitude"], location["longitude"], zoom=15)
 
-        print(f"Image saved to {file_path}")
+    file_path = "images/test_image.jpg"
+    image.save(file_path)
 
-    except Exception as e:
-        print("Error:", e)
+
+
 
 
 if __name__ == "__main__":

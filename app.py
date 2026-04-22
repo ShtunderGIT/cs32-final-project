@@ -12,7 +12,7 @@ def main():
     true_lon = location["longitude"]
 
     # Generate and save image
-    image = get_combined_image(true_lat, true_lon, zoom=11)
+    image = get_combined_image(true_lat, true_lon, zoom=13)
     image.save("images/test_image.jpg")
 
     print("A satellite image has been saved to images/test_image.jpg")

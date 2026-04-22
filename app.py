@@ -2,6 +2,56 @@ from location_generator import get_random_location, get_combined_image
 from bot import get_bot_guess, distance_in_km
 
 
+def get_bot_difficulty():
+    # Keep asking until difficulty is valid
+    while True:
+        difficulty = input("Choose bot difficulty (easy, medium, hard, insane): ").strip().lower()
+
+        if difficulty in ["easy", "medium", "hard", "insane"]:
+            return difficulty
+
+        print("Invalid difficulty. Please enter: easy, medium, hard, or insane.")
+        print()
+
+
+def get_latitude():
+    # Keep asking until latitude is a valid number
+    while True:
+        value = input("Enter your latitude guess: ").strip()
+
+        try:
+            latitude = float(value)
+
+            if latitude < -90 or latitude > 90:
+                print("Invalid latitude. Enter a number between -90 and 90.")
+                print()
+            else:
+                return latitude
+
+        except ValueError:
+            print("Invalid latitude. Please enter a number.")
+            print()
+
+
+def get_longitude():
+    # Keep asking until longitude is a valid number
+    while True:
+        value = input("Enter your longitude guess: ").strip()
+
+        try:
+            longitude = float(value)
+
+            if longitude < -180 or longitude > 180:
+                print("Invalid longitude. Enter a number between -180 and 180.")
+                print()
+            else:
+                return longitude
+
+        except ValueError:
+            print("Invalid longitude. Please enter a number.")
+            print()
+
+
 def main():
     print("Welcome to the Satellite Geography Game")
     print()
@@ -12,18 +62,16 @@ def main():
     true_lon = location["longitude"]
 
     # Generate and save image
-    image = get_combined_image(true_lat, true_lon, zoom=13)
+    image = get_combined_image(true_lat, true_lon, zoom=15)
     image.save("images/test_image.jpg")
 
     print("A satellite image has been saved to images/test_image.jpg")
     print()
 
-    # Difficulty
-    difficulty = input("Choose bot difficulty (easy, medium, hard, insane): ").strip().lower()
-
-    # Player guess
-    player_lat = float(input("Enter your latitude guess: "))
-    player_lon = float(input("Enter your longitude guess: "))
+    # Get validated inputs
+    difficulty = get_bot_difficulty()
+    player_lat = get_latitude()
+    player_lon = get_longitude()
 
     # Bot guess
     bot = get_bot_guess(true_lat, true_lon, difficulty)
@@ -56,7 +104,7 @@ def main():
     print("Longitude:", true_lon)
     print()
 
-    # Determine winner
+    # Winner
     if player_distance < bot_distance:
         margin = bot_distance - player_distance
         print("You WIN!")
@@ -67,7 +115,6 @@ def main():
         print("Bot beat you by", round(margin, 2), "km")
     else:
         print("It's a TIE!")
-
 
 
 if __name__ == "__main__":

@@ -43,8 +43,13 @@ def get_combined_image(lat, lon, zoom=15):
         for dy in [-1, 0, 1]:
             tile_url = f"{TILE_URL}/{zoom}/{y + dy}/{x + dx}"
 
-            response = requests.get(tile_url)
-            image = Image.open(BytesIO(response.content))
+            try:
+                response = requests.get(tile_url, timeout=5)
+                response.raise_for_status()
+                image = Image.open(BytesIO(response.content))
+            except:
+                # fallback if request fails or image is invalid
+                image = Image.new("RGB", (256, 256), (0, 0, 0))
 
             paste_x = (dx + 1) * tile_size
             paste_y = (dy + 1) * tile_size

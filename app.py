@@ -15,7 +15,7 @@ def get_bot_difficulty():
 
 
 def get_latitude():
-    # Keep asking until latitude is a valid number
+    # Keep asking until latitude is valid AND in U.S. range
     while True:
         value = input("Enter your latitude guess: ").strip()
 
@@ -25,8 +25,14 @@ def get_latitude():
             if latitude < -90 or latitude > 90:
                 print("Invalid latitude. Enter a number between -90 and 90.")
                 print()
-            else:
-                return latitude
+                continue
+
+            if latitude < 25 or latitude > 49:
+                print("Reminder: U.S. latitudes are roughly between 25 and 49.")
+                print()
+                continue
+
+            return latitude
 
         except ValueError:
             print("Invalid latitude. Please enter a number.")
@@ -34,7 +40,7 @@ def get_latitude():
 
 
 def get_longitude():
-    # Keep asking until longitude is a valid number
+    # Keep asking until longitude is valid AND negative (U.S.)
     while True:
         value = input("Enter your longitude guess: ").strip()
 
@@ -44,8 +50,14 @@ def get_longitude():
             if longitude < -180 or longitude > 180:
                 print("Invalid longitude. Enter a number between -180 and 180.")
                 print()
-            else:
-                return longitude
+                continue
+
+            if longitude > 0:
+                print("Reminder: U.S. longitudes are negative (west). Try again.")
+                print()
+                continue
+
+            return longitude
 
         except ValueError:
             print("Invalid longitude. Please enter a number.")

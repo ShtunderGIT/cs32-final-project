@@ -39,7 +39,7 @@ def get_bot_guess(true_lat, true_lon, difficulty):
     # Pick how wrong the bot will be
     mistake = random.uniform(bot_settings["min_mistake"], bot_settings["max_mistake"])
 
-    # Randomly choose direction of mistake
+    # Randomly choose offsets within that mistake range
     lat_offset = random.uniform(-mistake, mistake)
     lon_offset = random.uniform(-mistake, mistake)
 
@@ -50,14 +50,14 @@ def get_bot_guess(true_lat, true_lon, difficulty):
     guess_lat = max(-90, min(90, guess_lat))
     guess_lon = max(-180, min(180, guess_lon))
 
-    # Pick how long the bot "takes"
-    guess_time = random.uniform(bot_settings["min_time"], bot_settings["max_time"])
+    # Pick how long the bot takes
+    time_taken = random.uniform(bot_settings["min_time"], bot_settings["max_time"])
 
     return {
         "guess_latitude": guess_lat,
         "guess_longitude": guess_lon,
         "difficulty": difficulty,
-        "time_taken": round(guess_time, 2)
+        "time_taken": round(time_taken, 2)
     }
 
 
@@ -96,3 +96,4 @@ if __name__ == "__main__":
     )
 
     print("Error (km):", error)
+    print("Time taken:", bot_guess["time_taken"])

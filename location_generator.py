@@ -81,7 +81,7 @@ def main():
         print(f"Longitude: {location['longitude']}")
 
 
-        image = get_combined_image(location["latitude"], location["longitude"], zoom=15)
+        image = get_combined_image(location["latitude"], location["longitude"], zoom=12)
 
         file_path = "images/test_image.jpg"
         image.save(file_path)

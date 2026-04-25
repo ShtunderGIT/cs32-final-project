@@ -1,2 +1,7 @@
 
-My project is an interactive geography-based game inspired by GeoGuessr. Unlike GeoGuessr, which uses street-view images, this game will use satellite imagery instead. Players will be shown a satellite-view image of a mystery location and will have to guess where it is on a map. The game will support multiplayer, so multiple players can compete against each other to see who can make the most accurate guess in the shortest amount of time. It will also include a single-player mode with a robot opponent, allowing users to play even when other human players are not available.To generate locations and images, the project will use NASA’s open API for image search.
+My project is an interactive geography-based game inspired by GeoGuessr. Unlike GeoGuessr, which uses street-view images, this game will use satellite imagery instead. Players will be shown a satellite-view image of a mystery location and will have to guess where it is on a map. The game will support multiplayer, so multiple players can compete against each other to see who can make the most accurate guess in the shortest amount of time. It will also include a single-player mode with a robot opponent, allowing users to play even when other human players are not available. To generate locations and images, the project will use NASA’s open API for image search.
+
+FP Status notes: This project uses the pygame library to create a UI for the game. Because of that, the project can be started only from the
+Desktop VS Code. Otherwise, it won't be able to open the windows on the desktop to display the UI.
+
+Before running the code, install everything from requirements.txt

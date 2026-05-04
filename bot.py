@@ -3,31 +3,22 @@ import math
 
 
 def get_bot_guess(true_lat, true_lon, difficulty):
-    # Bot settings for each difficulty
     settings = {
         "easy": {
-            "min_mistake": 5.0,
-            "max_mistake": 10.0,
-            "min_time": 8,
-            "max_time": 15
+            "min_mistake": 7.0,
+            "max_mistake": 13.0
         },
         "medium": {
-            "min_mistake": 2.0,
-            "max_mistake": 5.0,
-            "min_time": 5,
-            "max_time": 10
+            "min_mistake": 3.0,
+            "max_mistake": 6.5
         },
         "hard": {
-            "min_mistake": 0.5,
-            "max_mistake": 2.0,
-            "min_time": 3,
-            "max_time": 7
+            "min_mistake": 1.0,
+            "max_mistake": 3.0
         },
         "insane": {
             "min_mistake": 0.1,
-            "max_mistake": 0.5,
-            "min_time": 1,
-            "max_time": 3
+            "max_mistake": 0.5
         }
     }
 
@@ -36,34 +27,25 @@ def get_bot_guess(true_lat, true_lon, difficulty):
 
     bot_settings = settings[difficulty]
 
-    # Pick how wrong the bot will be
     mistake = random.uniform(bot_settings["min_mistake"], bot_settings["max_mistake"])
 
-    # Randomly choose offsets within that mistake range
     lat_offset = random.uniform(-mistake, mistake)
     lon_offset = random.uniform(-mistake, mistake)
 
     guess_lat = true_lat + lat_offset
     guess_lon = true_lon + lon_offset
 
-    # Keep coordinates in valid bounds
     guess_lat = max(-90, min(90, guess_lat))
     guess_lon = max(-180, min(180, guess_lon))
-
-    # Pick how long the bot takes
-    time_taken = random.uniform(bot_settings["min_time"], bot_settings["max_time"])
 
     return {
         "guess_latitude": guess_lat,
         "guess_longitude": guess_lon,
-        "difficulty": difficulty,
-        "time_taken": round(time_taken, 2)
+        "difficulty": difficulty
     }
 
 
 def distance_in_km(lat1, lon1, lat2, lon2):
-    # Haversine formula
-
     r = 6371
 
     lat1 = math.radians(lat1)
@@ -78,22 +60,3 @@ def distance_in_km(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
     return r * c
-
-
-# Example test
-if __name__ == "__main__":
-    true_lat = 34.05
-    true_lon = -118.25
-
-    bot_guess = get_bot_guess(true_lat, true_lon, "medium")
-    print("Bot guess:", bot_guess)
-
-    error = distance_in_km(
-        true_lat,
-        true_lon,
-        bot_guess["guess_latitude"],
-        bot_guess["guess_longitude"]
-    )
-
-    print("Error (km):", error)
-    print("Time taken:", bot_guess["time_taken"])

@@ -1,133 +1,94 @@
-from location_generator import get_random_location, get_combined_image
+import os
+
+from location_generator import get_valid_location_image
 from bot import get_bot_guess, distance_in_km
 
 
-def get_bot_difficulty():
-    # Keep asking until difficulty is valid
-    while True:
-        difficulty = input("Choose bot difficulty (easy, medium, hard, insane): ").strip().lower()
+class SatelliteGame:
+    def __init__(self):
+        self.true_lat = None
+        self.true_lon = None
+        self.image_path = "images/test_image.jpg"
 
-        if difficulty in ["easy", "medium", "hard", "insane"]:
-            return difficulty
+    def start_new_round(self):
+        result = get_valid_location_image(zoom=13, min_success_tiles=9, max_attempts=300)
 
-        print("Invalid difficulty. Please enter: easy, medium, hard, or insane.")
-        print()
+        self.true_lat = result["latitude"]
+        self.true_lon = result["longitude"]
 
+        os.makedirs("images", exist_ok=True)
+        result["image"].save(self.image_path)
 
-def get_latitude():
-    # Keep asking until latitude is valid AND in U.S. range
-    while True:
-        value = input("Enter your latitude guess: ").strip()
+        return {
+            "image_path": self.image_path,
+            "true_lat": self.true_lat,
+            "true_lon": self.true_lon
+        }
+
+    def validate_guess(self, lat_text, lon_text):
+        try:
+            lat = float(lat_text)
+        except ValueError:
+            return None, None, "Latitude must be a number."
 
         try:
-            latitude = float(value)
-
-            if latitude < -90 or latitude > 90:
-                print("Invalid latitude. Enter a number between -90 and 90.")
-                print()
-                continue
-
-            if latitude < 25 or latitude > 49:
-                print("Reminder: U.S. latitudes are roughly between 25 and 49.")
-                print()
-                continue
-
-            return latitude
-
+            lon = float(lon_text)
         except ValueError:
-            print("Invalid latitude. Please enter a number.")
-            print()
+            return None, None, "Longitude must be a number."
 
+        if lat < -90 or lat > 90:
+            return None, None, "Latitude must be between -90 and 90."
 
-def get_longitude():
-    # Keep asking until longitude is valid AND negative (U.S.)
-    while True:
-        value = input("Enter your longitude guess: ").strip()
+        if lon < -180 or lon > 180:
+            return None, None, "Longitude must be between -180 and 180."
 
-        try:
-            longitude = float(value)
+        if lon > 0:
+            return None, None, "U.S. longitudes should be negative."
 
-            if longitude < -180 or longitude > 180:
-                print("Invalid longitude. Enter a number between -180 and 180.")
-                print()
-                continue
+        return lat, lon, None
 
-            if longitude > 0:
-                print("Reminder: U.S. longitudes are negative (west). Try again.")
-                print()
-                continue
+    def submit_guess(self, lat_text, lon_text, difficulty):
+        player_lat, player_lon, error_message = self.validate_guess(lat_text, lon_text)
 
-            return longitude
+        if error_message:
+            return {
+                "success": False,
+                "message": error_message
+            }
 
-        except ValueError:
-            print("Invalid longitude. Please enter a number.")
-            print()
+        bot_guess = get_bot_guess(self.true_lat, self.true_lon, difficulty)
 
+        player_distance = distance_in_km(
+            self.true_lat, self.true_lon, player_lat, player_lon
+        )
 
-def main():
-    print("Welcome to the Satellite Geography Game")
-    print()
+        bot_distance = distance_in_km(
+            self.true_lat, self.true_lon,
+            bot_guess["guess_latitude"], bot_guess["guess_longitude"]
+        )
 
-    # Generate location
-    location = get_random_location()
-    true_lat = location["latitude"]
-    true_lon = location["longitude"]
+        if player_distance < bot_distance:
+            winner = "You WIN!"
+            margin_message = f"You beat the bot by {bot_distance - player_distance:.2f} km"
+        elif bot_distance < player_distance:
+            winner = "Bot WINS!"
+            margin_message = f"Bot beat you by {player_distance - bot_distance:.2f} km"
+        else:
+            winner = "It's a TIE!"
+            margin_message = "You and the bot were equally accurate."
 
-    # Generate and save image
-    image = get_combined_image(true_lat, true_lon, zoom=13)
-    image.save("images/test_image.jpg")
-
-    print("A satellite image has been saved to images/test_image.jpg")
-    print()
-
-    # Get validated inputs
-    difficulty = get_bot_difficulty()
-    player_lat = get_latitude()
-    player_lon = get_longitude()
-
-    # Bot guess
-    bot = get_bot_guess(true_lat, true_lon, difficulty)
-
-    # Distances
-    player_distance = distance_in_km(true_lat, true_lon, player_lat, player_lon)
-    bot_distance = distance_in_km(true_lat, true_lon, bot["guess_latitude"], bot["guess_longitude"])
-
-    # Results
-    print()
-    print("Results")
-    print("-------------------")
-
-    print("Your guess:")
-    print("Latitude:", player_lat)
-    print("Longitude:", player_lon)
-    print("Distance from true location:", round(player_distance, 2), "km")
-    print()
-
-    print("Bot guess:")
-    print("Latitude:", bot["guess_latitude"])
-    print("Longitude:", bot["guess_longitude"])
-    print("Distance from true location:", round(bot_distance, 2), "km")
-    print("Difficulty:", bot["difficulty"])
-    print("Time taken:", bot["time_taken"], "(ignored for now)")
-    print()
-
-    print("True location:")
-    print("Latitude:", true_lat)
-    print("Longitude:", true_lon)
-    print()
-
-    # Winner
-    if player_distance < bot_distance:
-        margin = bot_distance - player_distance
-        print("You WIN!")
-        print("You beat the bot by", round(margin, 2), "km")
-    elif bot_distance < player_distance:
-        margin = player_distance - bot_distance
-        print("Bot WINS!")
-        print("Bot beat you by", round(margin, 2), "km")
-    else:
-        print("It's a TIE!")
-
-
-if __name__ == "__main__":
-    main()
+        return {
+            "success": True,
+            "message": "Round complete.",
+            "winner": winner,
+            "player_guess": (player_lat, player_lon),
+            "player_distance": player_distance,
+            "bot_guess": (
+                bot_guess["guess_latitude"],
+                bot_guess["guess_longitude"]
+            ),
+            "bot_distance": bot_distance,
+            "bot_difficulty": bot_guess["difficulty"],
+            "true_location": (self.true_lat, self.true_lon),
+            "margin_message": margin_message
+        }
